@@ -1,4 +1,5 @@
 (function ($) {
+
     $.widget("ef.ruler", {
         options: {
             unit: 'px',
@@ -6,9 +7,13 @@
             tickMinor: 20,
             tickMicro: 10,
             showLabel: true,
-			arrowStyle: 'line',
+	    arrowStyle: 'line',
             startX: 0,
             startY: 0,
+            width: '100%',
+            height: '100%',
+            overflow: '',
+            adicionalClass: '',
         },
 
         _$el: null,
@@ -48,12 +53,30 @@
             this.options.tickMicro = this._constrainTick(this.options.tickMicro);
             this.options.startX = this._constrainStart(this.options.startX);
             this.options.startY = this._constrainStart(this.options.startY);
+            this.options.width = this._constrainString(this.options.width);
+            this.options.height = this._constrainString(this.options.height);
+            this.options.overflow = this._constrainString(this.options.overflow);
+            this.options.adicionalClass = this._constrainString(this.options.adicionalClass);
+
+
+
 
             /* Calculate scrollbar width */
             this._scrollBarWidth = this._calcScrollBarWidth();
 
             /* Create container */
             var $container = $(document.createElement('div')).addClass('ef-ruler');
+            if(this.options.overflow !== ''){
+                $container.css('overflow', this.options.overflow);
+            }
+            if(this.options.width!=='100%'){
+            
+                $container.css('width', (parseInt(this.options.width)+17)+'px');
+            }
+            if(this.options.height!=='100%'){
+                $container.css('height', (parseInt(this.options.height)+17)+'px');
+            }
+
 
             /* corner */
             var $corner = $(document.createElement('div')).addClass('corner');
@@ -62,6 +85,10 @@
             /* Top ruler */
             var $topRuler = $(document.createElement('div')).addClass('ruler').addClass('top');
             $topRuler.appendTo($container);
+
+            if(this.options.width != "100%"){
+                $topRuler.css('width', (parseInt(this.options.width)+17)+'px');
+            }
 
 			var toparrowClass, leftarrowClass
 			switch (this.options.arrowStyle) {
@@ -86,11 +113,27 @@
             var $leftRuler = $(document.createElement('div')).addClass('ruler').addClass('left');
             $leftRuler.appendTo($container);
 
+            if(this.options.height != "100%"){
+                $leftRuler.css('height', (parseInt(this.options.height)+17)+'px');
+            }
             var $leftArrow = $(document.createElement('div')).addClass(leftarrowClass);
             $leftArrow.appendTo($leftRuler);
 
             /* stage */
             var $stage = $(document.createElement('div')).addClass('stage');
+
+            if(this.options.adicionalClass != ""){
+                $stage.addClass(this.options.adicionalClass);
+            }
+
+            if(this.options.width != "100%"){
+                $stage.css('width', this.options.width);
+            }
+
+            if(this.options.height != "100%"){
+                $stage.css('height', this.options.height);
+            }
+
             $stage.appendTo($container);
             $stage.append(this.element.contents());
 
@@ -183,6 +226,22 @@
             return unit;
         },
 
+        _constrainString: function (unit) {
+            if (typeof unit === 'string') {
+                unit = unit.toLowerCase();
+                this._units.every(function (sUnit) {
+                    if (unit === sUnit)
+                        return false;
+
+                    return true;
+                });
+            } else {
+                unit = ''
+            }
+
+            return unit;
+        },
+
         _constrainTick: function (tick) {
             if (isNaN(tick) || tick < 0)
                 return 0;
@@ -205,7 +264,6 @@
                 left: '-999px',
                 width: '100px',
                 height: '100px',
-                overflow: 'hidden'
             });
 
             this.element.append($tmpEl);
@@ -232,7 +290,7 @@
 
             this.element.append($tmpEl);
 
-            var px = $tmpEl.width();
+            var px = $tmpEl[0].getBoundingClientRect().width
 
             $tmpEl.remove();
 
@@ -248,6 +306,7 @@
             /* Fix rulers position */
             this._$topRuler.css('top', this._scrollTop);
             this._$leftRuler.css('left', this._scrollLeft);
+
         },
 
         _fixRulerSize: function () {
@@ -257,11 +316,15 @@
                 hStage = this._$stage.height();
 
             /* Fix rulers size */
-            this._$topRuler.width(
-                (wContainer < wStage) ?
-                    wStage :
-                    wContainer - this._$corner.width() - this._scrollBarWidth);
-            this._$leftRuler.height((hContainer < hStage) ? hStage : hContainer - this._scrollBarWidth);
+            if(this.options.width === "100%"){
+                this._$topRuler.width(
+                    (wContainer < wStage) ?
+                        wStage :
+                        wContainer - this._$corner.width() - this._scrollBarWidth);
+            }
+            if(this.options.height === "100%"){
+                this._$leftRuler.height((hContainer < hStage) ? hStage : hContainer - this._scrollBarWidth);
+            }
 
             this._updateRulerTicks();
         },
@@ -341,11 +404,14 @@
         },
 
         _fixArrowsPosition: function (mouseX, mouseY) {
-            var arrowX = mouseX - this.element.offset().left - this._$corner.width() - Math.round(this._$topArrow.outerWidth() / 2) + parseInt($('.ef-ruler').parents().eq(1).css('padding-left'),10);
-            var arrowY = mouseY - this.element.offset().top - this._$corner.height() - Math.round(this._$leftArrow.outerHeight() / 2) + parseInt($('.ef-ruler').parents().eq(1).css('padding-top'),10);
+            var arrowX = mouseX - this.element.offset().left - this._$corner.width() - Math.round(this._$topArrow.outerWidth() / 2) + parseInt($('.ef-ruler').parents().eq(0).css('padding-left'),10);
+            var arrowY = mouseY - this.element.offset().top - this._$corner.height() - Math.round(this._$leftArrow.outerHeight() / 2) + parseInt($('.ef-ruler').parents().eq(0).css('padding-top'),10);
 
-            this._$topArrow.css('left', arrowX + this._scrollLeft + $(window).scrollLeft());
-            this._$leftArrow.css('top', arrowY + this._scrollTop + $(window).scrollTop());
+            //this._$topArrow.css('left', arrowX + this._scrollLeft);
+            //this._$leftArrow.css('top', arrowY + this._scrollTop);
+
+             this._$topArrow.css('left', arrowX + this._scrollLeft + $(window).scrollLeft());
+             this._$leftArrow.css('top', arrowY + this._scrollTop + $(window).scrollTop());
         },
 
         refresh: function () {
